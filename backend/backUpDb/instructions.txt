@@ -4,7 +4,7 @@ Backup command for terminal.
 
 Making backup file:
 
-    pg_dump -U postgres -p 5433 -d ecstats -f ecstats_backup12.sql
+    pg_dump -U postgres -p 5433 -d ecstats -f ecstats_backup15.sql
 
 Windspeed has to be in km/h. 
 
