@@ -1,13 +1,13 @@
 INSERT INTO races (date, name, location, distance, category, race_type, race_website)
-VALUES ('2023-05-26', '43. Tartu Rattaralli', 'Tartu', 126, 'B', 'Road Race', 'https://tartumaraton.ee/')
+VALUES ('2013-06-02', '32. Tartu Rattaralli', 'Tartu', 135, 'B', 'Road Race', 'https://tartumaraton.ee/')
 RETURNING id;
 
 INSERT INTO race_data (race_id, temperature, wind_speed, elevation, start_time, edition)
 VALUES (
-    3,                -- Replace with the correct race_id
-    22,               -- Temperature: 22°C
-    13,               -- Wind speed: 13 km/h
-    1156,              -- Elevation gain: 1156 meters
-    '2024-05-26 11:00:00', -- Start time: 11 o'clock
-    43                -- Edition: 43
+    12,                -- Replace with the correct race_id
+    25,               -- Temperature: 22°C
+    15,               -- Wind speed: 13 km/h
+    0,              -- Elevation gain: 1156 meters
+    '2013-06-02 11:00:00', -- Start time: 11 o'clock
+    32                -- Edition: 43
 );

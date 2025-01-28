@@ -1,10 +1,10 @@
 Backup command for terminal. 
 
-psql -U postgres -p 5433 -d ecstats < ecstats_backup.sql
+    psql -U postgres -p 5433 -d ecstats < ecstats_backup.sql
 
 Making backup file:
 
-pg_dump -U postgres -p 5433 -d ecstats -f ecstats_backup.sql
+    pg_dump -U postgres -p 5433 -d ecstats -f ecstats_backup12.sql
 
 Windspeed has to be in km/h. 
 
@@ -13,3 +13,16 @@ weather info is taken from:
 https://www.wunderground.com/history/daily/ee/reola/EETU/date/2023-5-28
 
 wunderground.com 
+
+
+
+Looks pallia
+Slaalom
+Pool yks asi.
+Plank 10 min
+Pool yks teine asi. 
+PahvastePall
+Sooduharjustused 
+
+if no nationality. Nat = XXX
+if DNF then pos = 0 

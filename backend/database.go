@@ -2,9 +2,10 @@ package main
 
 import (
 	"database/sql"
-	_ "github.com/lib/pq"
+	"ecstats/backend/models"
 	"fmt"
 	"log"
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -25,43 +26,69 @@ func main() {
 
 	results := PrepareResultsData()
 	AddResultsToDb(db, results)
+
+	fmt.Println("Job finished!")
 }
 
-func AddRidersToDB(db *sql.DB ,riders []Rider) {
+func AddRidersToDB(db *sql.DB ,riders []models.Rider) {
+	var counter = 0
 	for _, rider := range riders {
-		
+		RiderId :=  QueryRiderId(db ,rider.FirstName, rider.LastName, rider.BirthYear)
+		if RiderId < 1 {
+			fmt.Println("Adding new rider to the db:", rider.FirstName, rider.LastName, rider.BirthYear)
+			counter++
+		} else {
+			continue
+		}
 		_, err := db.Exec(
 			`INSERT INTO riders (first_name, last_name, birth_year, nationality, gender)
 			VALUES ($1, $2, $3, $4, $5)
-			ON CONFLICT DO NOTHING;`,
+			ON CONFLICT (first_name, last_name, birth_year) DO NOTHING;`,
 			rider.FirstName, rider.LastName, rider.BirthYear, rider.Nationality, rider.Gender,
 		)
 		if err != nil {
 			fmt.Printf("Error insterting rider %s %s: %v\n", rider.FirstName, rider.LastName, err)
 		}
 	}
-	fmt.Println("Riders added to the DB!")
+	fmt.Println(counter,"Riders added to the DB!")
 }
 
-func AddResultsToDb(db *sql.DB, results []Result) {
-
+func AddResultsToDb(db *sql.DB, results []models.Result) {
+	fmt.Println("Adding results to DB!")
+	var counter = 0 
 	for _, result := range results {
 
 		RiderId :=  QueryRiderId(db ,result.FirstName, result.LastName, result.BirthYear)
+		if RiderId < 1 {
+			fmt.Printf("Rider %s %s (born %d) not found in the database. Cannot add result.\n", 
+			result.FirstName, result.LastName, result.BirthYear)
+			continue
+		}
+		if result.Position == 0 {
+			timeValue := "00:00:00" // Represents DNF with a valid interval
+			_, err := db.Exec (
+				`INSERT INTO results (race_id,rider_id, position, time, race_number, status)
+				VALUES ($1, $2, $3, $4, $5, $6)
+				ON CONFLICT (race_id, rider_id) DO NOTHING;`,
+				models.RaceId, RiderId, result.Position, timeValue, result.BibNumber,result.Status,
+			)
+			if err != nil {
+				fmt.Printf("Error insterting result for  %s %s: %v\n", result.FirstName, result.LastName, err, "Pos 0")
+			}
+			continue
+		}
 		_, err := db.Exec (
 			`INSERT INTO results (race_id,rider_id, position, time, race_number)
 			VALUES ($1, $2, $3, $4, $5)
-			ON CONFLICT DO NOTHING;`,
-			3, RiderId, result.Position, result.Time, result.BibNumber,
+			ON CONFLICT (race_id, rider_id) DO NOTHING;`,
+			models.RaceId, RiderId, result.Position, result.Time, result.BibNumber,
 		)
+		counter++
 		if err != nil {
 			fmt.Printf("Error insterting result for  %s %s: %v\n", result.FirstName, result.LastName, err)
 		}
 	}
-	// fmt.Println(results[7].BibNumber)
-	// fmt.Println(results[7].FirstName)
-	// fmt.Println(results[7].LastName)
-	// fmt.Println("Len of results", len(results))
+	fmt.Println(counter ,"Results added to DB!")
 }
 
 func QueryRiderId(db *sql.DB,firstName string, lastName string, birthYear int) (riderId int){
