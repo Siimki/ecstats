@@ -1,33 +1,20 @@
-package main
+package db
 
 import (
 	"database/sql"
-	"ecstats/backend/models"
 	"fmt"
+	_"github.com/lib/pq"
+	"ecstats/backend/models"
 	"log"
-	_ "github.com/lib/pq"
 )
 
-func main() {
-	db := ConnectToDB()
-	defer db.Close()
-
-	err := db.Ping()
+func ConnectToDB() *sql.DB {
+	connStr := "user=postgres password=admin dbname=ecstats sslmode=disable port=5433"
+	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		log.Fatal("Database not reachable: ", err)
+		log.Fatal(err)
 	}
-
-	fmt.Println("Database connect succesfully!")
-	
-	//I added all riders so I am fine with that currently. 
-
-	riders := PrepareRiderData()
-	AddRidersToDB(db, riders)
-
-	results := PrepareResultsData()
-	AddResultsToDb(db, results)
-
-	fmt.Println("Job finished!")
+	return db
 }
 
 func AddRidersToDB(db *sql.DB ,riders []models.Rider) {
@@ -53,6 +40,7 @@ func AddRidersToDB(db *sql.DB ,riders []models.Rider) {
 	fmt.Println(counter,"Riders added to the DB!")
 }
 
+
 func AddResultsToDb(db *sql.DB, results []models.Result) {
 	fmt.Println("Adding results to DB!")
 	var counter = 0 
@@ -73,7 +61,7 @@ func AddResultsToDb(db *sql.DB, results []models.Result) {
 				models.RaceId, RiderId, result.Position, timeValue, result.BibNumber,result.Status,
 			)
 			if err != nil {
-				fmt.Printf("Error insterting result for  %s %s: %v\n", result.FirstName, result.LastName, err, "Pos 0")
+				fmt.Printf("Error insterting result for  %s %s: %v\n and pos is 0", result.FirstName, result.LastName, err)
 			}
 			continue
 		}
@@ -102,7 +90,7 @@ func QueryRiderId(db *sql.DB,firstName string, lastName string, birthYear int) (
 		if err == sql.ErrNoRows {
 			fmt.Println("Birthyear", birthYear)
 			fmt.Println("First name", firstName, "lastname" , lastName)
-			fmt.Printf("no rider found for %s %s, born in %s\n", firstName, lastName, birthYear)
+			fmt.Printf("no rider found for %s %s, born in %v\n", firstName, lastName, birthYear)
 			return 0
 		}
 		fmt.Printf("Error querying rider_id for %s %s: %v\n", firstName, lastName, err)
@@ -112,15 +100,4 @@ func QueryRiderId(db *sql.DB,firstName string, lastName string, birthYear int) (
 }
 
 
-func ConnectToDB() *sql.DB {
-	connStr := "user=postgres password=admin dbname=ecstats sslmode=disable port=5433"
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return db
-}
 
-func InsertRidersToDB() {
-
-}

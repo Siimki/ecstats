@@ -1,0 +1,12 @@
+INSERT INTO races (date, name, location, distance, category, race_type, race_website)
+VALUES ('2007-09-16', '10. Tartu Rattamaraton', 'Otepää', 87, 'B', 'MTB', 'https://tartumaraton.ee/')
+RETURNING id;
+
+INSERT INTO race_data (race_id, edition, temperature, wind_speed, start_time)
+VALUES (
+    30,    -- Replace with correct race_id
+    21,    -- 10th edition
+    15,    -- 15°C
+    19,     -- 8 km/h wind
+    '2018-09-16 10:00:00' -- Race start time
+);

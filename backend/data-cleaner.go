@@ -113,7 +113,11 @@ func PrepareRiderData()(riders []models.Rider) {
 		})
 
 	}
-	
+
+	err := validateRider(riders)
+	if err != nil {
+		log.Fatal("Failed to validate riders", err)
+	}
 	
 	return riders
 }
@@ -194,3 +198,32 @@ func ageCheck(birthYear int) {
 	}
 }
 
+func validateRider(riders []models.Rider) error {
+
+
+	for _, rider := range riders {
+		if len(rider.FirstName) > 50 {
+			return fmt.Errorf("first name %s is too long", rider.FirstName)
+		}
+		
+		if len(rider.LastName) > 50 {
+			return fmt.Errorf("last name %s is too long", rider.LastName)
+		}
+		
+		if rider.BirthYear > 2026 || rider.BirthYear < 1901 {
+			return fmt.Errorf("invalid birth year: %d", rider.BirthYear)
+		}
+	
+		if !regexp.MustCompile(`^[A-Z]{3}$`).MatchString(rider.Nationality) {
+			return fmt.Errorf("invalid nationality: %s", rider.Nationality)
+		}
+	
+		validGenders := map[string]bool{"M": true, "F": true, "O": true, "": true}
+		if !validGenders[rider.Gender] {
+			return fmt.Errorf("invalid gender: %s", rider.Gender)
+		}
+	
+	}
+	
+	return nil
+}

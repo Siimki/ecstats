@@ -24,5 +24,5 @@ type Result struct {
 	Status string
 }
 
-const RaceId = 16
-const FileToRead = "../results/2009-TARTU-RATTARALLI"
+const RaceId = 30
+const FileToRead = "../results/TARTU-RATTAMARATON/2018-TARTU-RATTAMARATON"

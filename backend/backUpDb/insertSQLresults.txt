@@ -1,9 +1,0 @@
-INSERT INTO races (date, name, location, distance, category, race_type, race_website)
-VALUES ('2009-05-31', '28. Tartu Rattaralli', 'Tartu', 125, 'B', 'Road Race', 'https://tartumaraton.ee/')
-RETURNING id;
-
-INSERT INTO race_data (race_id, edition)
-VALUES (
-    16,                -- Replace with the correct race_id
-    28                -- Edition: 43
-);
