@@ -1,0 +1,9 @@
+
+# Ignore backup and results files
+backend/backUpDb/
+results/
+
+
+# Ignore system files
+.DS_Store
+Thumbs.db
