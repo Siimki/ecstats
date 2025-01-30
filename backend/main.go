@@ -3,6 +3,7 @@ package main
 import (
 	// "database/sql"
 	// "ecstats/backend/models"
+	"ecstats/backend/dataclean"
 	"ecstats/backend/db"
 	"fmt"
 	"log"
@@ -22,19 +23,19 @@ func main() {
 	
 	//I added all riders so I am fine with that currently. 
 
-	riders := PrepareRiderData()
-	db.AddRidersToDB(conn, riders)
 
-	results := PrepareResultsData()
+
+	riders := dataclean.PrepareRiderData()
+	db.AddRidersToDB(conn, riders)
+	
+	results := dataclean.PrepareResultsData()
 	db.AddResultsToDb(conn, results)
 
+	db.AddTeamsToDB(conn, riders)
+
+	db.AddRiderTeamRelations(conn, riders, 2022)
+	
 	fmt.Println("Job finished!")
 }
 
 
-
-
-
-func InsertRidersToDB() {
-
-}

@@ -27,6 +27,7 @@ func AddRidersToDB(db *sql.DB ,riders []models.Rider) {
 		} else {
 			continue
 		}
+
 		_, err := db.Exec(
 			`INSERT INTO riders (first_name, last_name, birth_year, nationality, gender)
 			VALUES ($1, $2, $3, $4, $5)
@@ -38,6 +39,59 @@ func AddRidersToDB(db *sql.DB ,riders []models.Rider) {
 		}
 	}
 	fmt.Println(counter,"Riders added to the DB!")
+}
+
+func AddTeamsToDB(db *sql.DB ,riders []models.Rider) {
+	var counter = 0
+	for _, rider := range riders {
+		if rider.Team == "" {
+			continue
+		}
+		
+		teamId := QueryTeamId(db, rider.Team)
+		if teamId > 0{
+			continue 
+		}
+
+		_, err := db.Exec(`INSERT INTO teams (name) VALUES ($1) ON CONFLICT (name) DO NOTHING`, rider.Team)
+		if err != nil {
+			fmt.Printf("Error inserting teams %s: %v\n", rider.Team, err)
+		} else {
+			counter++
+			fmt.Println("Added new team:", rider.Team)
+		}
+	}
+	fmt.Println("Total new teams added: ", counter)
+}
+
+func AddRiderTeamRelations(db *sql.DB, riders []models.Rider, year int) {
+	
+	for _, rider := range riders {
+		if rider.Team == "" {
+			continue 
+		}
+
+		riderId := QueryRiderId(db, rider.FirstName, rider.LastName, rider.BirthYear)
+		if riderId < 1 {
+			fmt.Println("skipping rider(NOT FOUND)", rider.FirstName, rider.LastName)
+			continue
+		}
+
+		teamId := QueryTeamId(db, rider.Team)
+		if teamId < 1 {
+			fmt.Println("skipping team(not found):", rider.Team)
+			continue
+		}
+
+		_, err := db.Exec(`INSERT INTO rider_teams (rider_id, team_id, year) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+		riderId, teamId, year)
+		if err != nil {
+			fmt.Printf("Error inserting rider-team link for %s: %v\n", rider.FirstName, err)
+		} else {
+			//fmt.Printf("Linked %s %s to %s for %d\n", rider.FirstName, rider.LastName, rider.Team, year)
+		}
+	}
+
 }
 
 
@@ -99,5 +153,22 @@ func QueryRiderId(db *sql.DB,firstName string, lastName string, birthYear int) (
 	return riderId
 }
 
+func QueryTeamId(db *sql.DB, teamName string) (teamId int) {
+	err := db.QueryRow(
+		`SELECT id FROM teams WHERE name = $1`,
+		teamName,
+	).Scan(&teamId)
 
+	if err != nil {
+		if err == sql.ErrNoRows {
+			fmt.Printf("No team found for %s: %v\n", teamName, err)
+			return 0
+		}
+		fmt.Printf("Error querying team_id for %s: %v\n", teamName, err)
+		return 0
+	}
+
+	//fmt.Printf("Found team ID %d for %s\n", teamId, teamName)
+	return teamId
+}
 
