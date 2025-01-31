@@ -1,7 +1,9 @@
 
 # Ignore backup and results files
 backend/backUpDb/
+backend/config/config.yaml
 results/
+
 
 
 # Ignore system files

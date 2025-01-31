@@ -29,8 +29,8 @@ type Result struct {
 
 //last TRR was id 36
 //42 was Rakke
-const RaceId = 43
-const FileToRead = "../results/BOSCH/output.txt"
+// const RaceId = 43
+// const FileToRead = "../results/BOSCH/output.txt"
 
 var PatternForRidersInfo = `([A-ZÄÖÜÕŠŽ]+(?:[\s-][A-ZÄÖÜÕŠŽ]+)?)\s+([A-ZÄÖÜÕŠŽ][a-zäöüõšž]+(?:[\s-][A-ZÄÖÜÕŠŽa-zäöüõšž]+)*)\s+(\d{4})\s+([A-Z]{3})\s+\S+\s+([MN](?:\sjuunior|[-\d]+)?)`
 var PatternForTeamsInfo = `(?m)^(?:[^\t]*\t){8}([^\t]*)\t\d+\s*$`

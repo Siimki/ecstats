@@ -1,16 +1,17 @@
 package main
 
 import (
-	// "database/sql"
-	// "ecstats/backend/models"
-	"ecstats/backend/dataclean"
 	"ecstats/backend/db"
 	"fmt"
 	"log"
 	_ "github.com/lib/pq"
+	"ecstats/backend/config"
+	"ecstats/backend/dataclean"
+
 )
 
 func main() {
+
 	conn := db.ConnectToDB()
 	defer conn.Close()
 
@@ -21,9 +22,8 @@ func main() {
 
 	fmt.Println("Database connect succesfully!")
 	
-	//I added all riders so I am fine with that currently. 
-
-
+	dataclean.CapitalizePopularLastNames()
+	//I added all riders so I am fine with that currently.
 
 	riders := dataclean.PrepareRiderData()
 	db.AddRidersToDB(conn, riders)
@@ -33,7 +33,7 @@ func main() {
 
 	db.AddTeamsToDB(conn, riders)
 
-	db.AddRiderTeamRelations(conn, riders, 2022)
+	db.AddRiderTeamRelations(conn, riders, config.Year)
 	
 	fmt.Println("Job finished!")
 }

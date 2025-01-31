@@ -2,19 +2,38 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
-	_"github.com/lib/pq"
+	"ecstats/backend/config"
 	"ecstats/backend/models"
+	"fmt"
 	"log"
+
+	_ "github.com/lib/pq"
 )
 
 func ConnectToDB() *sql.DB {
-	connStr := "user=postgres password=admin dbname=ecstats sslmode=disable port=5433"
+	// connStr := "user=postgres password=admin dbname=ecstats sslmode=disable port=5433"
+	// db, err := sql.Open("postgres", connStr)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// return db
+	cfg, err := config.LoadConfig("config/config.yaml")
+	if err != nil {
+		log.Fatal("Failed to load config:", err)
+	}
+
+	connStr := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=%s host=%s port=%d",
+		cfg.Database.User, cfg.Database.Password, cfg.Database.Name, cfg.Database.SSLMode,
+		cfg.Database.Host, cfg.Database.Port,
+	)
+
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Failed to connect to database:", err)
 	}
+
 	return db
+
 }
 
 func AddRidersToDB(db *sql.DB ,riders []models.Rider) {
@@ -112,7 +131,7 @@ func AddResultsToDb(db *sql.DB, results []models.Result) {
 				`INSERT INTO results (race_id,rider_id, position, time, race_number, status)
 				VALUES ($1, $2, $3, $4, $5, $6)
 				ON CONFLICT (race_id, rider_id) DO NOTHING;`,
-				models.RaceId, RiderId, result.Position, timeValue, result.BibNumber,result.Status,
+				config.RaceId, RiderId, result.Position, timeValue, result.BibNumber,result.Status,
 			)
 			if err != nil {
 				fmt.Printf("Error insterting result for  %s %s: %v\n and pos is 0", result.FirstName, result.LastName, err)
@@ -123,7 +142,7 @@ func AddResultsToDb(db *sql.DB, results []models.Result) {
 			`INSERT INTO results (race_id,rider_id, position, time, race_number)
 			VALUES ($1, $2, $3, $4, $5)
 			ON CONFLICT (race_id, rider_id) DO NOTHING;`,
-			models.RaceId, RiderId, result.Position, result.Time, result.BibNumber,
+			config.RaceId, RiderId, result.Position, result.Time, result.BibNumber,
 		)
 		counter++
 		if err != nil {

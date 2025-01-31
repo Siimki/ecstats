@@ -2,6 +2,7 @@ package dataclean
 
 import (
 	"ecstats/backend/models"
+	"ecstats/backend/config"
 	"fmt"
 	"log"
 	"os"
@@ -11,11 +12,11 @@ import (
 	"unicode"
 )
 
-var regexBosch = `(\d+)\s+([\p{L}A-Za-zÀ-ÖØ-öø-ÿ-]+(?:\s[\p{L}A-Za-zÀ-ÖØ-öø-ÿ-]+)*)\s+(Mees|Naine)\s+(\d{4})\s+(\w{3})\s+((?:[A-Za-zÀ-ÖØ-öø-ÿ0-9\\€\\.]+[-/\s]*)*)?\s+(\d{2}:\d{2}:\d{2})?\s+(DNF|\d+)`
+var regexBosch = `(\d+)\s+([\p{L}A-Za-zÀ-ÖØ-öø-ÿ-]+(?:\s[\p{L}A-Za-zÀ-ÖØ-öø-ÿ-]+)*)\s+(Mees|Naine)\s+(\d{4})\s+(\w{3})\s+((?:[A-Za-zÀ-ÖØ-öø-ÿ0-9\\€\\.\\&]+[-/\s]*)*)?\s+(\d{2}:\d{2}:\d{2})?\s+(DNF|\d+)`
 var regex2019 = `(\d+|\D{3})?\t(\d+)\t([A-ZÄÖÜÕŠŽ\s]+(?:[\s-][A-ZÄÖÜÕŠŽ]+)?)\s+([A-ZÄÖÜÕŠŽ][a-zäöüõšž]+(?:[\s-][A-ZÄÖÜÕŠŽa-zäöüõšž]+)*)\s+(\d{4})\s+([A-Z]{3})\s+(\d+:\d+:\d+)?\t([MN\d]+)`
 
 func readResultFromFile() []byte {
-	data, err := os.ReadFile(models.FileToRead)
+	data, err := os.ReadFile(config.FileToRead)
 	if err != nil {
 		log.Fatal("Cant read file")
 	}
@@ -53,7 +54,7 @@ func PrepareResultsData() (results []models.Result) {
 			FirstName: firstName,
 			LastName:  lastNameCapitalized,
 			BirthYear: birthYear,
-			RaceId:    models.RaceId,
+			RaceId:    config.RaceId,
 			Position:  position,
 			Time:      match[7],
 			BibNumber: bibNumber,
@@ -152,11 +153,12 @@ func PrepareRiderData() (riders []models.Rider) {
 			Gender:      match[3],
 			Team: 		match[6],
 		})
-
+		
 	}
 	fmt.Println(problematicNames)
 	fmt.Println("Count of problematic names :", len(problematicNames))
-	log.Fatal("stop program, solve problematic names")
+	//log.Fatal("stop program, solve problematic names")
+
 
 	err := validateRider(riders)
 	if err != nil {
@@ -165,6 +167,10 @@ func PrepareRiderData() (riders []models.Rider) {
 
 	return riders
 }
+
+
+
+
 
 func capitalize(s string) (nationalityCode string){
 	nationalityCode = strings.ToUpper(s)

@@ -11,6 +11,10 @@ Making backup file:
     pg_dump -U postgres -p 5433 -d ecstats -f ecstats_backup18.sql
 
 
+# There is yaml file with important DB data
+    
+    Need to have it locally. 
+
 info about DB:
 
 Windspeed is in km/h
