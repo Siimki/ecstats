@@ -15,7 +15,7 @@ import (
 var regexBosch = `(\d+)\s+([\p{L}A-Za-zÀ-ÖØ-öø-ÿ-]+(?:\s[\p{L}A-Za-zÀ-ÖØ-öø-ÿ-]+)*)\s+(Mees|Naine)\s+(\d{4})\s+(\w{3})\s+((?:[A-Za-zÀ-ÖØ-öø-ÿ0-9\\€\\.\\&]+[-/\s]*)*)?\s+(\d{2}:\d{2}:\d{2})?\s+(DNF|\d+)`
 var regex2019 = `(\d+|\D{3})?\t(\d+)\t([A-ZÄÖÜÕŠŽ\s]+(?:[\s-][A-ZÄÖÜÕŠŽ]+)?)\s+([A-ZÄÖÜÕŠŽ][a-zäöüõšž]+(?:[\s-][A-ZÄÖÜÕŠŽa-zäöüõšž]+)*)\s+(\d{4})\s+([A-Z]{3})\s+(\d+:\d+:\d+)?\t([MN\d]+)`
 
-func readResultFromFile() []byte {
+func ReadResultFromFile() []byte {
 	data, err := os.ReadFile(config.FileToRead)
 	if err != nil {
 		log.Fatal("Cant read file")
@@ -23,8 +23,10 @@ func readResultFromFile() []byte {
 	return data
 }
 
+
+
 func PrepareResultsData() (results []models.Result) {
-	data := readResultFromFile()
+	data := ReadResultFromFile()
 
 	re := regexp.MustCompile(regexBosch)
 	matches := re.FindAllStringSubmatch(string(data), -1)
@@ -48,7 +50,7 @@ func PrepareResultsData() (results []models.Result) {
 		}
 
 		firstName, lastName := ExtractNames(match[2])
-		lastNameCapitalized := capitalize(lastName)
+		lastNameCapitalized := Capitalize(lastName)
 
 		results = append(results, models.Result{
 			FirstName: firstName,
@@ -60,6 +62,7 @@ func PrepareResultsData() (results []models.Result) {
 			BibNumber: bibNumber,
 			//Status: "DNF",
 		})
+		
 	}
 	return results
 }
@@ -105,7 +108,7 @@ func isUpperCase(s string) bool {
 }
 
 func PrepareRiderData() (riders []models.Rider) {
-	data := readResultFromFile()
+	data := ReadResultFromFile()
     var problematicNames []string
 	// Compile the regex
 	re := regexp.MustCompile(regexBosch)
@@ -132,19 +135,13 @@ func PrepareRiderData() (riders []models.Rider) {
 		} else {
 			match[3] = "F"
 		}
-		nationalityCode := capitalize(match[5])
+		nationalityCode := Capitalize(match[5])
 		problematicName := FindProblematicLine(match[2])
 		if problematicName != "" {
 			problematicNames = append(problematicNames, problematicName)
 		}
-		//fmt.Println(match[2])
 		firstName, lastName := ExtractNames(match[2])
-		// fmt.Println("FirstName;", firstName)
-		// fmt.Println("LastName;", lastName)
-		// fmt.Println("year", year)
-		// fmt.Println("natuoanliy", nationalityCode)
-		// fmt.Println("Gender", match[3])
-		lastNameCapitalized := capitalize(lastName)
+		lastNameCapitalized := Capitalize(lastName)
 		riders = append(riders, models.Rider{
 			LastName:    lastNameCapitalized,
 			FirstName:   firstName,
@@ -170,9 +167,7 @@ func PrepareRiderData() (riders []models.Rider) {
 
 
 
-
-
-func capitalize(s string) (nationalityCode string){
+func Capitalize(s string) (nationalityCode string){
 	nationalityCode = strings.ToUpper(s)
 	return nationalityCode
 }

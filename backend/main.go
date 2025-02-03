@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	_ "github.com/lib/pq"
-	"ecstats/backend/config"
+	//"ecstats/backend/config"
 	"ecstats/backend/dataclean"
 
 )
@@ -21,21 +21,21 @@ func main() {
 	}
 
 	fmt.Println("Database connect succesfully!")
-	
-	dataclean.CapitalizePopularLastNames()
-	//I added all riders so I am fine with that currently.
+	dataclean.CleanBosch(conn)
+	// dataclean.CapitalizePopularLastNames()
+	// //I added all riders so I am fine with that currently.
 
-	riders := dataclean.PrepareRiderData()
-	db.AddRidersToDB(conn, riders)
+	// riders := dataclean.PrepareRiderData()
+	// db.AddRidersToDB(conn, riders)
 	
-	results := dataclean.PrepareResultsData()
-	db.AddResultsToDb(conn, results)
+	// results := dataclean.PrepareResultsData()
+	// db.AddResultsToDb(conn, results)
 
-	db.AddTeamsToDB(conn, riders)
+	// db.AddTeamsToDB(conn, riders)
 
-	db.AddRiderTeamRelations(conn, riders, config.Year)
+	// db.AddRiderTeamRelations(conn, riders, config.Year)
 	
-	fmt.Println("Job finished!")
+	// fmt.Println("Job finished!")
 }
 
 

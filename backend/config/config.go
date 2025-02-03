@@ -7,9 +7,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const RaceId = 57
+const RaceId = 123
+const RaceIdStart = 71
+const RaceIdFinish = 78
 const FileToRead = "../results/BOSCH/output.txt"
-const Year = 2024
+const DuplicateFile = "../results/BOSCH/duplicates2.txt"
+const Year = 2015
 
 var PopularNamesToCapitalize = []string{
 	"Puri", "Ruder", "Pärn", "Rannaveer", "Jakobson", "Rebane", "Tuula-Fjodorov", "Valge-Rebane", "Evendi",

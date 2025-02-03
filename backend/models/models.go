@@ -24,6 +24,7 @@ type Result struct {
 	Time string
 	BibNumber int
 	Status string
+	Points int
 }
 
 
