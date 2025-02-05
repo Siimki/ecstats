@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func CleanBosch(conn *sql.DB) {
@@ -19,22 +20,21 @@ func CleanBosch(conn *sql.DB) {
 	//group 3 is gc points
 	// 4-11 are stages
 	//namesToTest := []string{"Mari-Liis Mõttus", "Mari Mõttus-Ottender", "Mari-Liis Mõttus-Ottender", "Mari Liis Mõttus", "Mari Liis Mõttus-Ottender", "Mathieu van der Poel"}
-	regexGcBosch := `(\d+).\s+([\w\-\ \\-äõüöšŠĀī]+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\n`
+	regexGcBosch := `(\d+).\s+([\w\-\ \\-äõüöšŠĀī]+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\n`
 	fmt.Println("Clean bosch")
 	data := ReadResultFromFile()
 	re := regexp.MustCompile(regexGcBosch)
 	matches := re.FindAllStringSubmatch(string(data), -1)
 
 	var counter int
-	const numStages = 9
-	var results []models.Result
+	const numStages = 10
 	boschStages := make([][][]string, numStages)
 
+	start:= time.Now()
 	for _, match := range matches {
 
 		counter++
 		fullName := match[2]
-	//	fmt.Println(match[0])
 		for stageIdx := 0; stageIdx < numStages; stageIdx++ {
 			stageResult := match[stageIdx+3] // stage1 is match[4], stage2 is match[5], etc.
 			boschStages[stageIdx] = append(boschStages[stageIdx], []string{stageResult, fullName})
@@ -44,73 +44,69 @@ func CleanBosch(conn *sql.DB) {
 			log.Fatal("Acccident in clean bosch extract names! ", err)
 		}
 		lastNameCapitalized := Capitalize(LastName)
-		count := db.DuplicateCheck(conn, firstName, lastNameCapitalized)
+		firstNameCapitalized := CapitalizeFirstLetter(firstName)
+		count := db.DuplicateCheck(conn, firstNameCapitalized, lastNameCapitalized)
 		if count > 1 {
-			fmt.Println("Duplicate found:", firstName, lastNameCapitalized)
+			fmt.Println("Duplicate found:", firstNameCapitalized, lastNameCapitalized)
 		}		
 
 	}
-	// Now that we have all the data, sort each stage's results.
-//	SortBosch(boschStages)
-//	fmt.Println(boschStages)
-
-	// for i := 1; i <= 8; i++ {
-
-	// }
-
-	for position , row := range boschStages[0] {
-		//fullName := GCresult[2]
-		firstName, LastName, err := ExtractNamesInBosch(row[1])
-		if err != nil {
-			log.Fatal("Acccident in clean bosch extract names! ")
-		}
-		lastNameCapitalized := Capitalize(LastName)
-		points, err := strconv.Atoi(row[0])
-		if err != nil {
-			log.Fatal("Conversion points error in clean bosch.")
-		}
-		if points == 0 {
-			continue
-		}
-		results = append(results, models.Result{
-			FirstName: firstName,
-			LastName:  lastNameCapitalized,
-			RaceId:    config.RaceId,
-			Position:  position+1,			
-			Points:		points,
-		})
-	}
-	// fmt.Println(results)
-	// fmt.Println(results[0].FirstName)
-	// fmt.Println(results[0].LastName)
-	// fmt.Println(results[0].RaceId)
-	// fmt.Println(results[0].Position)
-
-	//db.AddResultsWithoutTimeToDb(conn, results, 78)
-
-//	fmt.Println(len(boschStages))
-	//AddBoschGcRidersToDb(conn, boschStages[0]) //2016 done
+	// Now that we have all the data, sort each stage's results
+	SortBosch(boschStages)
 	
+		var results []models.Result // Reset results for each stag	
+		for position , row := range boschStages[0] {
+			//fullName := GCresult[2]
+			firstName, LastName, err := ExtractNamesInBosch(row[1])
+			if err != nil {
+				log.Fatal("Acccident in clean bosch extract names! ")
+			}
+			lastNameCapitalized := Capitalize(LastName)
+			firstNameCapitalized := CapitalizeFirstLetter(firstName)
+			points, err := strconv.Atoi(row[0])
+			if err != nil {
+				log.Fatal("Conversion points error in clean bosch.")
+			}
+			if points == 0 {
+				continue
+			}
+			
+		
+			results = append(results, models.Result{
+				FirstName: firstNameCapitalized,
+				LastName:  lastNameCapitalized,
+				RaceId:    config.RaceId,
+				Position:  position+1,			
+				Points:		points,
+			})
+			
 
+		}
+		db.AddResultsWithoutTimeToDb(conn, results, config.RaceId)
+
+	fmt.Println("Stage was:", config.StageNr, "Id was", config.RaceId)
+	elapsed := time.Since(start)
+	fmt.Printf("execution time: %s\n", elapsed)
+	    // riders := AddBoschGcRidersToDb(conn, boschStages[0]) //2016 done
+		//    db.AddRidersToDBwithNameOnly(conn, riders)
+	
 }
 
-func AddBoschGcRidersToDb(conn *sql.DB ,gcResults [][]string)   {
-	var riders []models.Rider
+func AddBoschGcRidersToDb(conn *sql.DB ,gcResults [][]string) (riders []models.Rider)   {
 	for _, gcResults := range gcResults{
 		firstName, lastName, err := ExtractNamesInBosch(gcResults[1])
 		if err != nil {
 			fmt.Println(err)
 		}
 		lastNameCapitalized := Capitalize(lastName)
+		firstNameCapitalized := CapitalizeFirstLetter(firstName)
 		riders = append(riders, models.Rider{
 			LastName:    lastNameCapitalized,
-			FirstName:   firstName,
+			FirstName:   firstNameCapitalized,
 		})
 		fmt.Println("Firstname, last name:",riders, "X")
-	
 	}
-	db.AddRidersToDBwithNameOnly(conn, riders)
-	
+	return riders
 }
 
 
@@ -118,7 +114,6 @@ func AddBoschGcRidersToDb(conn *sql.DB ,gcResults [][]string)   {
 func SortBosch(results [][][]string) () {
 	for _, stageResults := range results {
 		sortStageResults(stageResults)
-		//fmt.Printf("Sorted Stage %d Results: %v\n", i+1, stageResults)
 	}
 	return 
 }

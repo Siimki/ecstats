@@ -12,8 +12,8 @@ import (
 	"unicode"
 )
 
-var regexBosch = `(\d+)\s+([\p{L}A-Za-zÀ-ÖØ-öø-ÿ-]+(?:\s[\p{L}A-Za-zÀ-ÖØ-öø-ÿ-]+)*)\s+(Mees|Naine)\s+(\d{4})\s+(\w{3})\s+((?:[A-Za-zÀ-ÖØ-öø-ÿ0-9\\€\\.\\&]+[-/\s]*)*)?\s+(\d{2}:\d{2}:\d{2})?\s+(DNF|\d+)`
-var regex2019 = `(\d+|\D{3})?\t(\d+)\t([A-ZÄÖÜÕŠŽ\s]+(?:[\s-][A-ZÄÖÜÕŠŽ]+)?)\s+([A-ZÄÖÜÕŠŽ][a-zäöüõšž]+(?:[\s-][A-ZÄÖÜÕŠŽa-zäöüõšž]+)*)\s+(\d{4})\s+([A-Z]{3})\s+(\d+:\d+:\d+)?\t([MN\d]+)`
+
+var regexBosch = "ADD REGEX HERE"
 
 func ReadResultFromFile() []byte {
 	data, err := os.ReadFile(config.FileToRead)
@@ -23,11 +23,9 @@ func ReadResultFromFile() []byte {
 	return data
 }
 
-
-
 func PrepareResultsData() (results []models.Result) {
-	data := ReadResultFromFile()
 
+	data := ReadResultFromFile()
 	re := regexp.MustCompile(regexBosch)
 	matches := re.FindAllStringSubmatch(string(data), -1)
 
@@ -60,7 +58,6 @@ func PrepareResultsData() (results []models.Result) {
 			Position:  position,
 			Time:      match[7],
 			BibNumber: bibNumber,
-			//Status: "DNF",
 		})
 		
 	}
@@ -70,12 +67,9 @@ func PrepareResultsData() (results []models.Result) {
 func ExtractNames(fullName string) (string, string) {
 	
 	splittedFullName := strings.Split(fullName, " ")
-
 	if len(splittedFullName) == 2 {
 		return splittedFullName[0], splittedFullName[1]
 	}
-
-
 	words := strings.Fields(fullName)
 	var firstNameParts []string
 	var lastNameParts []string
@@ -110,7 +104,6 @@ func isUpperCase(s string) bool {
 func PrepareRiderData() (riders []models.Rider) {
 	data := ReadResultFromFile()
     var problematicNames []string
-	// Compile the regex
 	re := regexp.MustCompile(regexBosch)
 
 	matches := re.FindAllStringSubmatch(string(data), -1)
@@ -157,7 +150,7 @@ func PrepareRiderData() (riders []models.Rider) {
 	//log.Fatal("stop program, solve problematic names")
 
 
-	err := validateRider(riders)
+	err := ValidateRider(riders)
 	if err != nil {
 		log.Fatal("Failed to validate riders", err)
 	}
@@ -237,7 +230,7 @@ func checkEdgeCases(data string, matches [][]string, regex string) {
 		if err != nil {
 			log.Fatal("Come to checkEdgeCases and age check conversion")
 		}
-		ageCheck(age)
+		AgeCheck(age)
 	}
 	lines := strings.Split(string(data), "\n")
 	fmt.Println(len(lines))
@@ -266,14 +259,34 @@ func checkEdgeCases(data string, matches [][]string, regex string) {
 	fmt.Println("If nothing was printed then all is good")
 }
 
-func ageCheck(birthYear int) {
+func AgeCheck(birthYear int) {
 	if birthYear > 2010 && birthYear < 1910 {
 		fmt.Println("Error: rider born in", birthYear)
 		log.Fatal("Bruv check the birth year here")
 	}
 }
 
-func validateRider(riders []models.Rider) error {
+func CapitalizeFirstLetter(name string) string {
+	if name == "" {
+		return name
+	}
+
+	runes := []rune(name)
+	runes[0] = unicode.ToUpper(runes[0])
+
+	for i := 1; i < len(runes); i++ {
+		if runes[i-1] == ' ' || runes[i-1] == '-' {
+			runes[i] = unicode.ToUpper(runes[i])
+		} else {
+			runes[i] = unicode.ToLower(runes[i])
+		}
+	}
+
+	return string(runes)
+}
+
+
+func ValidateRider(riders []models.Rider) error {
 
 	for _, rider := range riders {
 		if len(rider.FirstName) > 50 {

@@ -7,9 +7,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const RaceId = 123
-const RaceIdStart = 71
-const RaceIdFinish = 78
+const RaceId = 125
+const StageNr = 0
 const FileToRead = "../results/BOSCH/output.txt"
 const DuplicateFile = "../results/BOSCH/duplicates2.txt"
 const Year = 2015

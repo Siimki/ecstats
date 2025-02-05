@@ -87,6 +87,7 @@ func AddRidersToDBwithNameOnly(db *sql.DB ,riders []models.Rider) {
 		if err != nil {
 			fmt.Printf("Error insterting rider %s %s: %v\n", rider.FirstName, rider.LastName, err)
 		}
+
 	}
 	fmt.Println(counter,"Riders added to the DB!")
 }
@@ -250,7 +251,7 @@ func AddResultsWithoutTimeToDb(db *sql.DB, results []models.Result, raceId int) 
 
 		exist := CheckIfResultExist(db, result.FirstName, result.LastName, raceId)
 		if exist {
-			fmt.Println("Result already exist")
+			fmt.Println("Result already exist for raceId", raceId)
 			continue
 		}
 
@@ -264,6 +265,9 @@ func AddResultsWithoutTimeToDb(db *sql.DB, results []models.Result, raceId int) 
 		counter++
 		if err != nil {
 			fmt.Printf("Error insterting result for  %s %s: %v\n", result.FirstName, result.LastName, err)
+		}
+		if counter < 5 {
+			fmt.Println(result.FirstName, result.LastName )
 		}
 	}
 	fmt.Println(counter ,"Results added to DB!")
