@@ -30,6 +30,6 @@ TT = "TT" || "TTP" for pair TT || "TTT" for Team time trial
 
 if no nationality. Nat = XXX
 if DNF then pos = 0 // change to nothing perhaps. 
-if name is "";  name = DUMMY Data
+if name is "";  name = DUMMY Data.
 
 
