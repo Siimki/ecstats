@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"ecstats/backend/config"
 	"strconv"
-
-	//	"ecstats/backend/dataclean"
 	"bufio"
 	"ecstats/backend/models"
 	"fmt"
@@ -17,17 +15,7 @@ import (
 )
 var RiderMap = make(map[string]int)
 
-func ConnectToDB() *sql.DB {
-	// connStr := "user=postgres password=admin dbname=ecstats sslmode=disable port=5433"
-	// db, err := sql.Open("postgres", connStr)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// return db
-	cfg, err := config.LoadConfig("config/config.yaml")
-	if err != nil {
-		log.Fatal("Failed to load config:", err)
-	}
+func ConnectToDB(cfg *config.Config) *sql.DB {
 
 	connStr := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=%s host=%s port=%d",
 		cfg.Database.User, cfg.Database.Password, cfg.Database.Name, cfg.Database.SSLMode,
@@ -53,7 +41,6 @@ func AddRidersToDB(db *sql.DB ,riders []models.Rider) {
 		} else {
 			continue
 		}
-
 		_, err := db.Exec(
 			`INSERT INTO riders (first_name, last_name, birth_year, nationality, gender)
 			VALUES ($1, $2, $3, $4, $5)
@@ -77,11 +64,13 @@ func AddRidersToDBwithNameOnly(db *sql.DB ,riders []models.Rider) {
 		} else {
 			continue
 		}
+		rider.Gender = "M"
+
 		_, err := db.Exec(
 			`INSERT INTO riders (first_name, last_name, gender, birth_year)
 			 VALUES ($1, $2, $3, DEFAULT)
 			 ON CONFLICT (first_name, last_name, birth_year) DO NOTHING;`,
-			rider.FirstName, rider.LastName, "O",
+			rider.FirstName, rider.LastName, rider.Gender,
 		)
 		
 		if err != nil {
@@ -91,6 +80,7 @@ func AddRidersToDBwithNameOnly(db *sql.DB ,riders []models.Rider) {
 	}
 	fmt.Println(counter,"Riders added to the DB!")
 }
+
 
 func AddTeamsToDB(db *sql.DB ,riders []models.Rider) {
 	var counter = 0
@@ -146,8 +136,8 @@ func AddRiderTeamRelations(db *sql.DB, riders []models.Rider, year int) {
 }
 
 
-func AddResultsToDb(db *sql.DB, results []models.Result) {
-	fmt.Println("Adding results to DB!")
+func AddResultsToDb(db *sql.DB, results []models.Result, c *config.Config) {
+	fmt.Println("Start adding results to DB!")
 	var counter = 0 
 	for _, result := range results {
 
@@ -163,7 +153,7 @@ func AddResultsToDb(db *sql.DB, results []models.Result) {
 				`INSERT INTO results (race_id,rider_id, position, time, race_number, status)
 				VALUES ($1, $2, $3, $4, $5, $6)
 				ON CONFLICT (race_id, rider_id) DO NOTHING;`,
-				config.RaceId, RiderId, result.Position, timeValue, result.BibNumber,result.Status,
+				c.Race.RaceID, RiderId, result.Position, timeValue, result.BibNumber,result.Status,
 			)
 			if err != nil {
 				fmt.Printf("Error insterting result for  %s %s: %v\n and pos is 0", result.FirstName, result.LastName, err)
@@ -174,7 +164,7 @@ func AddResultsToDb(db *sql.DB, results []models.Result) {
 			`INSERT INTO results (race_id,rider_id, position, time, race_number)
 			VALUES ($1, $2, $3, $4, $5)
 			ON CONFLICT (race_id, rider_id) DO NOTHING;`,
-			config.RaceId, RiderId, result.Position, result.Time, result.BibNumber,
+			c.Race.RaceID, RiderId, result.Position, result.Time, result.BibNumber,
 		)
 		counter++
 		if err != nil {
@@ -185,7 +175,7 @@ func AddResultsToDb(db *sql.DB, results []models.Result) {
 }
 
 func ReadFromDuplicateFile() error {
-	file, err := os.Open(config.DuplicateFile)
+	file, err := os.Open("../results/BOSCH/duplicates2.txt")
 	if err != nil {
 		log.Fatal("Cant read file")
 	}

@@ -13,30 +13,25 @@ import (
 	"strings"
 	"time"
 )
-
-func CleanBosch(conn *sql.DB) {
-	//group 1 is gc place
-	//group 2 is names
-	//group 3 is gc points
-	// 4-11 are stages
-	//namesToTest := []string{"Mari-Liis Mõttus", "Mari Mõttus-Ottender", "Mari-Liis Mõttus-Ottender", "Mari Liis Mõttus", "Mari Liis Mõttus-Ottender", "Mathieu van der Poel"}
-	regexGcBosch := `(\d+).\s+([\w\-\ \\-äõüöšŠĀī]+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t(\d+)\n`
+//GCparser
+func CleanBosch(conn *sql.DB, c *config.Config) {
+	regexGcBosch := `\d+\s+((?:[\p{L}\p{M}’'-]+\s+){1,3}[\p{L}\p{M}’'-]+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)`
 	fmt.Println("Clean bosch")
-	data := ReadResultFromFile()
+	data := ReadResultFromFile(c.Race.FileToRead)
 	re := regexp.MustCompile(regexGcBosch)
 	matches := re.FindAllStringSubmatch(string(data), -1)
 
 	var counter int
-	const numStages = 10
+	const numStages = 6
 	boschStages := make([][][]string, numStages)
-
+	var riders []models.Rider
 	start:= time.Now()
 	for _, match := range matches {
 
 		counter++
-		fullName := match[2]
+		fullName := match[1]
 		for stageIdx := 0; stageIdx < numStages; stageIdx++ {
-			stageResult := match[stageIdx+3] // stage1 is match[4], stage2 is match[5], etc.
+			stageResult := match[stageIdx+2] // stage1 is match[4], stage2 is match[5], etc.
 			boschStages[stageIdx] = append(boschStages[stageIdx], []string{stageResult, fullName})
 		}
 		firstName, LastName, err := ExtractNamesInBosch(fullName)
@@ -49,12 +44,18 @@ func CleanBosch(conn *sql.DB) {
 		if count > 1 {
 			fmt.Println("Duplicate found:", firstNameCapitalized, lastNameCapitalized)
 		}		
+		riders = append(riders, models.Rider{
+			FirstName: firstNameCapitalized,
+			LastName: lastNameCapitalized,
+		})
 
 	}
 	// Now that we have all the data, sort each stage's results
 	SortBosch(boschStages)
 	
-		var results []models.Result // Reset results for each stag	
+	var results []models.Result // Reset results for each stag	
+	//for stageIdx, stage := range boschStages {
+		raceId := c.Race.RaceID 
 		for position , row := range boschStages[0] {
 			//fullName := GCresult[2]
 			firstName, LastName, err := ExtractNamesInBosch(row[1])
@@ -70,25 +71,27 @@ func CleanBosch(conn *sql.DB) {
 			if points == 0 {
 				continue
 			}
-			
 		
 			results = append(results, models.Result{
 				FirstName: firstNameCapitalized,
 				LastName:  lastNameCapitalized,
-				RaceId:    config.RaceId,
+				RaceId:    raceId,
 				Position:  position+1,			
 				Points:		points,
 			})
-			
 
-		}
-		db.AddResultsWithoutTimeToDb(conn, results, config.RaceId)
+		//}
+		fmt.Println(results, c.Race.RaceID)
+		db.AddResultsWithoutTimeToDb(conn, results, raceId)
+		results = nil
+	}
+		//db.AddResultsWithoutTimeToDb(conn, results, c.Race.RaceID)
 
-	fmt.Println("Stage was:", config.StageNr, "Id was", config.RaceId)
+	fmt.Println("Stage was:", c.Race.StageNumber, "Id was", c.Race.RaceID)
 	elapsed := time.Since(start)
 	fmt.Printf("execution time: %s\n", elapsed)
-	    // riders := AddBoschGcRidersToDb(conn, boschStages[0]) //2016 done
-		//    db.AddRidersToDBwithNameOnly(conn, riders)
+	//riders2 := AddBoschGcRidersToDb(conn, boschStages[0]) //2016 done
+	//db.AddRidersToDBwithNameOnly(conn, riders)
 	
 }
 
@@ -108,7 +111,6 @@ func AddBoschGcRidersToDb(conn *sql.DB ,gcResults [][]string) (riders []models.R
 	}
 	return riders
 }
-
 
 
 func SortBosch(results [][][]string) () {
@@ -131,7 +133,7 @@ func sortStageResults(results [][]string) {
 }
 
 func ExtractNamesInBosch(fullName string) (fname string, lname string, err error) {
-	splittedFullName := strings.Split(fullName, " ")
+	splittedFullName := strings.Split(fullName, "	")
 	if len(splittedFullName) == 2 {
 		return splittedFullName[0], splittedFullName[1], nil
 	} else if len(splittedFullName) == 3 {
@@ -139,5 +141,6 @@ func ExtractNamesInBosch(fullName string) (fname string, lname string, err error
 	} else if len(splittedFullName) == 4 {
 		return splittedFullName[0] + " " + splittedFullName[1] + " " + splittedFullName[2], splittedFullName[3], nil
 	}
-	return "", "", fmt.Errorf("Unexpected name format. %s", fullName)
+	return "", "", fmt.Errorf("unexpected name format. %s", fullName)
 }
+

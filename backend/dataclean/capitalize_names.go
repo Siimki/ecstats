@@ -8,9 +8,9 @@ import (
 	"log"
 )
 
-func CapitalizePopularLastNames() {
+func CapitalizePopularLastNames(c *config.Config) {
 
-	content, err := ioutil.ReadFile(config.FileToRead)
+	content, err := ioutil.ReadFile(c.Race.FileToRead)
 	if err != nil {
 		log.Fatal("Cant read file in capitalize")
 		return
@@ -21,7 +21,7 @@ func CapitalizePopularLastNames() {
 		text = strings.ReplaceAll(text, name, strings.ToUpper(name))
 	}
 
-	err = ioutil.WriteFile(config.FileToRead, []byte(text), 0644)
+	err = ioutil.WriteFile(c.Race.FileToRead, []byte(text), 0644)
 	if err != nil {
 		log.Fatal("Failed to write file", err)
 	}

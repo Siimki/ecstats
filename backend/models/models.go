@@ -28,11 +28,6 @@ type Result struct {
 }
 
 
-//last TRR was id 36
-//42 was Rakke
-// const RaceId = 43
-// const FileToRead = "../results/BOSCH/output.txt"
-
 var regexBosch = `(\d+)\s+([\p{L}A-Za-zÀ-ÖØ-öø-ÿ-]+(?:\s[\p{L}A-Za-zÀ-ÖØ-öø-ÿ-]+)*)\s+(Mees|Naine)\s+(\d{4})\s+(\w{3})\s+((?:[A-Za-zÀ-ÖØ-öø-ÿ0-9\\€\\.\\&]+[-/\s]*)*)?\s+(\d{2}:\d{2}:\d{2})?\s+(DNF|\d+)`
 var regex2019 = `(\d+|\D{3})?\t(\d+)\t([A-ZÄÖÜÕŠŽ\s]+(?:[\s-][A-ZÄÖÜÕŠŽ]+)?)\s+([A-ZÄÖÜÕŠŽ][a-zäöüõšž]+(?:[\s-][A-ZÄÖÜÕŠŽa-zäöüõšž]+)*)\s+(\d{4})\s+([A-Z]{3})\s+(\d+:\d+:\d+)?\t([MN\d]+)`
 var PatternForRidersInfo = `([A-ZÄÖÜÕŠŽ]+(?:[\s-][A-ZÄÖÜÕŠŽ]+)?)\s+([A-ZÄÖÜÕŠŽ][a-zäöüõšž]+(?:[\s-][A-ZÄÖÜÕŠŽa-zäöüõšž]+)*)\s+(\d{4})\s+([A-Z]{3})\s+\S+\s+([MN](?:\sjuunior|[-\d]+)?)`

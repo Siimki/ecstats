@@ -17,7 +17,7 @@ func TestExtractNames(t *testing.T) {
 		{"John DOE", "John", "DOE"},
 		{"Peeter TARVIS", "Peeter", "TARVIS"},
 		{"Andres VELTSON", "Andres", "VELTSON"},
-		//{"Mihkel Tamm", "Mihkel Tamm", ""}, // No uppercase last name
+		//{"Mihkel Tamm", "Mihkel TAMM", ""}, // No uppercase last name
 		{"Karl Jüri KISKONEN-TAMM", "Karl Jüri", "KISKONEN-TAMM"},
 		{"Markus VÄLI", "Markus", "VÄLI"},
 		{"Heiki LÕHMUS KASK", "Heiki", "LÕHMUS KASK"},
@@ -28,8 +28,8 @@ func TestExtractNames(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		firstName, lastName := dataclean.ExtractNames(test.fullName)
-		if firstName != test.firstName || lastName != test.lastName {
+		firstName, lastName, err := dataclean.ExtractNames(test.fullName)
+		if firstName != test.firstName || lastName != test.lastName || err != nil {
 			t.Errorf("extractNames(%q) = (%q, %q); want (%q, %q)",
 				test.fullName, firstName, lastName, test.firstName, test.lastName)
 		}

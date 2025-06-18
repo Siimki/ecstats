@@ -1,8 +1,8 @@
 package dataclean
 
 import (
-	"ecstats/backend/models"
 	"ecstats/backend/config"
+	"ecstats/backend/models"
 	"fmt"
 	"log"
 	"os"
@@ -10,87 +10,107 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+	"bufio"
+
+//	"golang.org/x/tools/go/cfg"
 )
 
 
-var regexBosch = "ADD REGEX HERE"
 
-func ReadResultFromFile() []byte {
-	data, err := os.ReadFile(config.FileToRead)
+
+type Group struct {
+	Position int
+	BibNumber int 
+}
+
+
+func ReadResultFromFile(fileName string) []byte {
+	data, err := os.ReadFile(fileName)
 	if err != nil {
-		log.Fatal("Cant read file")
+		log.Fatal("Cant read file: ",fileName , " Err:", err)
 	}
 	return data
 }
 
-func PrepareResultsData() (results []models.Result) {
 
-	data := ReadResultFromFile()
-	re := regexp.MustCompile(regexBosch)
-	matches := re.FindAllStringSubmatch(string(data), -1)
+func PrepareResultsData(matches [][]string,c *config.Config) (results []models.Result) {
 
 	for _, match := range matches {
-
-		position, err := strconv.Atoi(match[8])
+		var birthYear int
+		position, err := strconv.Atoi(match[c.RegexGroups.Position+1])
 		if err != nil {
 			fmt.Println(err, "Cant convert in PrepareResultsData", position, "change positsion to 0")
 			position = 0
 		}
 
-		bibNumber, err := strconv.Atoi(match[1])
+		bibNumber, err := strconv.Atoi(match[c.RegexGroups.BibNumber+1])
 		if err != nil {
 			fmt.Println(err, "Cant convert bibnumber in PrepareResultsData")
 		}
 
-		birthYear, err := strconv.Atoi(match[4])
-		if err != nil {
-			fmt.Println(err, "Cant convert birthyear in PrepareResultsData")
+		if c.RegexGroups.BirthYear > -1 {
+			birthYear, err = strconv.Atoi(match[c.RegexGroups.BirthYear+1])
+			if err != nil {
+				fmt.Println(err, "Cant convert birthyear in PrepareResultsData")
+			}
 		}
+		
+		firstName, lastName, err := ExtractNames(match[c.RegexGroups.FullName+1])
+		if err != nil {
+			log.Fatal(err)
+		}
+		match[c.RegexGroups.Time+1] = strings.Replace(match[c.RegexGroups.Time+1], ",", ".", 1)
 
-		firstName, lastName := ExtractNames(match[2])
 		lastNameCapitalized := Capitalize(lastName)
-
+		fmt.Println(birthYear)
+		fmt.Println(firstName)
+		fmt.Println(lastName)
+		fmt.Println(c.Race.RaceID)
+		fmt.Println(position)
+		fmt.Println(match[c.RegexGroups.Time+1])
+		fmt.Println(bibNumber)
 		results = append(results, models.Result{
 			FirstName: firstName,
 			LastName:  lastNameCapitalized,
-			BirthYear: birthYear,
-			RaceId:    config.RaceId,
+			//BirthYear: birthYear,
+			RaceId:    c.Race.RaceID,
 			Position:  position,
-			Time:      match[7],
+			Time:      match[c.RegexGroups.Time+1],
 			BibNumber: bibNumber,
 		})
-		
+		fmt.Println()
+
 	}
+
 	return results
 }
 
-func ExtractNames(fullName string) (string, string) {
-	
+
+func ExtractNames(fullName string) (fname string, lname string, err error) {
 	splittedFullName := strings.Split(fullName, " ")
 	if len(splittedFullName) == 2 {
-		return splittedFullName[0], splittedFullName[1]
+		return splittedFullName[0], splittedFullName[1], nil
+	} else if len(splittedFullName) == 3 {
+		return splittedFullName[0] + " " + splittedFullName[1], splittedFullName[2], nil
+	} else if len(splittedFullName) == 4 {
+		return splittedFullName[0] + " " + splittedFullName[1] + " " + splittedFullName[2], splittedFullName[3], nil
 	}
-	words := strings.Fields(fullName)
-	var firstNameParts []string
-	var lastNameParts []string
-	foundLastName := false
-
-	for _, word := range words {
-		if isUpperCase(word) {
-			foundLastName = true
-		}
-		if foundLastName {
-			lastNameParts = append(lastNameParts, word)
-		} else {
-			firstNameParts = append(firstNameParts, word)
-		}
-	}
-
-	firstName := strings.Join(firstNameParts, " ")
-	lastName := strings.Join(lastNameParts, " ")
-
-	return firstName, lastName
+	return "", "", fmt.Errorf("unexpected name format: %s. Len of name: %s", fullName, fname )
 }
+
+
+func ExtractNamesNew(fullName string) (fname string, lname string, err error) {
+	splittedFullName := strings.Split(fullName, " ")
+	if len(splittedFullName) == 2 {
+		return splittedFullName[0], splittedFullName[1], nil
+	} else if len(splittedFullName) == 3 {
+		return splittedFullName[0] + " " + splittedFullName[1], splittedFullName[2], nil
+	} else if len(splittedFullName) == 4 {
+		return splittedFullName[0] + " " + splittedFullName[1] + " " + splittedFullName[2], splittedFullName[3], nil
+	}
+	return "", "", fmt.Errorf("unexpected name format. %s", fullName)
+}
+
 
 func isUpperCase(s string) bool {
 	for _, r := range s {
@@ -101,54 +121,64 @@ func isUpperCase(s string) bool {
 	return true
 }
 
-func PrepareRiderData() (riders []models.Rider) {
-	data := ReadResultFromFile()
-    var problematicNames []string
-	re := regexp.MustCompile(regexBosch)
-
-	matches := re.FindAllStringSubmatch(string(data), -1)
-	checkEdgeCases(string(data), matches, regexBosch)
-	checkDuplicates(matches)
+func PrepareRiderData(matches [][]string,c *config.Config) (riders []models.Rider) {
+	var problematicNames []string
 
 	for _, match := range matches {
+		var err error
+		if c.RegexGroups.BirthYear > -1 {
+			fmt.Println("c.RegexGroups.Birthyear =", c.RegexGroups.BirthYear)
+			//year, err := strconv.Atoi(match[c.RegexGroups.BirthYear+1])
+			if err != nil {
+				fmt.Println("Error converting string to int at year conversion")
+				return
+			}
+		}
+		if string(match[c.RegexGroups.Gender+1]) != "M" {
+			match[c.RegexGroups.Gender+1] = "F"
+		} 
 
-		year, err := strconv.Atoi(match[4])
-		if err != nil {
-			fmt.Println("Error converting string to int at year conversion")
-			return
+		//	var nationalityCode string
+		if c.RegexGroups.Nationality > -1 {
+			//nationalityCode = Capitalize(match[c.RegexGroups.Nationality+1])
 		}
 
-		if string(match[3]) != "Mees" && string(match[3]) != "Naine" {
-			fmt.Println("Other gender?")
-			return
-		}
-
-		if string(match[3]) == "Mees" {
-			match[3] = "M"
-		} else {
-			match[3] = "F"
-		}
-		nationalityCode := Capitalize(match[5])
-		problematicName := FindProblematicLine(match[2])
+		problematicName := FindProblematicLine(match[c.RegexGroups.FullName+1])
 		if problematicName != "" {
 			problematicNames = append(problematicNames, problematicName)
 		}
-		firstName, lastName := ExtractNames(match[2])
+		firstName, lastName, err := ExtractNames(match[c.RegexGroups.FullName+1])
+		if err != nil {
+			log.Fatal(err)
+		}
 		lastNameCapitalized := Capitalize(lastName)
+		//fmt.Println("Firstname: ", firstName, "Last:", lastNameCapitalized)
 		riders = append(riders, models.Rider{
 			LastName:    lastNameCapitalized,
 			FirstName:   firstName,
-			BirthYear:   year,
-			Nationality: nationalityCode,
-			Gender:      match[3],
-			Team: 		match[6],
+			//BirthYear:   year,
+			//Nationality: nationalityCode,
+			Gender:      match[c.RegexGroups.Gender+1],
+			// Team: 		match[c.RegexGroups.Team],
 		})
 		
 	}
-	fmt.Println(problematicNames)
-	fmt.Println("Count of problematic names :", len(problematicNames))
-	//log.Fatal("stop program, solve problematic names")
 
+	fmt.Println(riders)
+	if len(problematicNames) > 0 {
+		fmt.Println(problematicNames)
+		fmt.Println("Count of problematic names :", len(problematicNames))
+
+		reader := bufio.NewReader(os.Stdin);
+		fmt.Print("Continue anyway? (y/n): ")
+		input, _ := reader.ReadString('\n')
+		input = strings.TrimSpace(strings.ToLower(input))
+
+		if input != "y" && input != "yes" {
+			log.Fatal("stop program, solve problematic names")
+		}
+	
+	}
 
 	err := ValidateRider(riders)
 	if err != nil {
@@ -166,7 +196,7 @@ func Capitalize(s string) (nationalityCode string){
 }
 
 func FindProblematicLine(fullName string)  (probleMaticName string ) {
-
+	//fmt.Println("Fullname is:", fullName)
 	if strings.Contains(fullName, "-") {
 	//	fmt.Println(fullName, "contains hyphen")
 		return fullName
@@ -177,7 +207,7 @@ func FindProblematicLine(fullName string)  (probleMaticName string ) {
 	return ""
 }
 
-func checkDuplicates(matches [][]string) {
+func CheckDuplicates(matches [][]string) {
 
 	nameMap := make(map[string]int)
 	duplicatesFound := false
@@ -204,34 +234,32 @@ func checkDuplicates(matches [][]string) {
 
 }
 
-func checkEdgeCases(data string, matches [][]string, regex string) {
-	var counter = 1
+func CheckEdgeCases(c *config.Config,data string, matches [][]string) {
+	var counter = 0
 	for i, v := range matches {
-		// fmt.Println(v[1])
-		// fmt.Println(v[2])
-		// fmt.Println(v[3])
-		// fmt.Println(v[4])
-		// fmt.Println(v[5])
-		// fmt.Println(v[6])
-		// fmt.Println(v[7])
-		// fmt.Println(v[8])
-		// fmt.Println("value of I is ")
-
-		//m[i][8] is last element and in bosch it is positision
-		//TRR is vice-versa
-		if pos, err := strconv.Atoi(matches[i][8]); pos != counter {
+		fmt.Println(c.RegexGroups.Position, " is pos ")
+		fmt.Println(matches[i][c.RegexGroups.Position+1])
+		if pos, err := strconv.Atoi(matches[i][c.RegexGroups.Position+1]); pos != counter {
 			fmt.Println("Valuse of pos is:", pos, "valus of counter is:", counter)
 			fmt.Println(err)
 			fmt.Println("edgeCase problem", v)
-			log.Fatal()
+			//log.Fatal()
 		}
+		fmt.Println("add counter")
 		counter++
-		age, err := strconv.Atoi(matches[i][4])
-		if err != nil {
-			log.Fatal("Come to checkEdgeCases and age check conversion")
+		fmt.Println(counter)
+		if c.RegexGroups.BirthYear > -1 {
+			fmt.Println("c.RegexGroups", c.RegexGroups.BirthYear)
+			fmt.Println("Type of ")
+			age, err := strconv.Atoi(matches[i][c.RegexGroups.BirthYear])
+			if err != nil {
+				log.Fatal("Come to checkEdgeCases and age check conversion")
+			}
+			AgeCheck(age)
 		}
-		AgeCheck(age)
+
 	}
+
 	lines := strings.Split(string(data), "\n")
 	fmt.Println(len(lines))
 	fmt.Println(len(matches))
@@ -239,10 +267,10 @@ func checkEdgeCases(data string, matches [][]string, regex string) {
 	if len(lines) == len(matches) {
 		fmt.Println("All should be good. Now write return statement under this function")
 	} else {
-		log.Fatal("Lines and matches does not add up")
+		log.Fatal("Lines and matches does not add up: Lines: ", len(lines), " Matches:", len(matches))
 	}
 	// Compile the regex
-	re := regexp.MustCompile(regex)
+	re := regexp.MustCompile(c.RegexGroups.Regex)
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line) // Clean up extra spaces
@@ -291,19 +319,29 @@ func ValidateRider(riders []models.Rider) error {
 	for _, rider := range riders {
 		if len(rider.FirstName) > 50 {
 			return fmt.Errorf("first name %s is too long", rider.FirstName)
+		} else if len(rider.FirstName) < 2 {
+			return fmt.Errorf("first name %s too short?", rider.FirstName)
 		}
 
 		if len(rider.LastName) > 50 {
 			return fmt.Errorf("last name %s is too long", rider.LastName)
+		} else if len(rider.LastName) < 2 {
+			fmt.Println("Full name on short name is ", rider.FirstName, rider.LastName)
+			return fmt.Errorf("last name %s too short?", rider.LastName)
+		}
+		
+		if rider.BirthYear != 0 {
+			if rider.BirthYear > 2026 || rider.BirthYear < 1901 {
+				return fmt.Errorf("invalid birth year: %d", rider.BirthYear)
+			}
 		}
 
-		if rider.BirthYear > 2026 || rider.BirthYear < 1901 {
-			return fmt.Errorf("invalid birth year: %d", rider.BirthYear)
+		if rider.Nationality != "" {
+			if !regexp.MustCompile(`^[A-Z]{3}$`).MatchString(rider.Nationality) {
+				return fmt.Errorf("invalid nationality: %s", rider.Nationality)
+			}
 		}
 
-		if !regexp.MustCompile(`^[A-Z]{3}$`).MatchString(rider.Nationality) {
-			return fmt.Errorf("invalid nationality: %s", rider.Nationality)
-		}
 
 		validGenders := map[string]bool{"M": true, "F": true, "O": true, "": true}
 		if !validGenders[rider.Gender] {

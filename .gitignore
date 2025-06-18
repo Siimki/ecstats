@@ -3,6 +3,7 @@
 backend/backUpDb/
 backend/config/config.yaml
 results/
+import/
 
 
 

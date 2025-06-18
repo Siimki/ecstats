@@ -1,5 +1,17 @@
 # ecstats
 
+## Current workflow 
+
+ - Download results. Prefer live timing website for known format. 
+ - If needed, do data cleaning with python/GO. 
+ - Make Regex at regex101.com to group(name, time, place, etc..) the results. 
+ - Update config.yaml with regex and race_id. 
+ - If we first run main.go the program shows possible problematic names. Take a look at them manually from terminal before continuing. 
+ - Continue inserting results if previous steps are done. 
+ - Query check the amount of results manually from DB.
+ - Make backup from DB.
+
+
 ## SQL Commands 
 
 Backup command for terminal. 
